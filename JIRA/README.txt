@@ -33,7 +33,7 @@ Supybot needs one patch to work well with suds.
              logging.Logger._log(self, level, msg, (), exc_info=exc_info)
 
 supybot has its own logging processing. But it can't handle when a non-string
-is passed to the log functions.
+(e.g. an object of a class) is passed to the log functions.
 
       File "build/bdist.linux-x86_64/egg/suds/client.py", line 648, in send
         log.error(self.last_sent())
