@@ -8,16 +8,18 @@ class JiraClient:
         self._status_map = None
         self._resolution_map = None
 
-        self._login(username, password)
+        self._username = username
+        self._password = password
+        self._login()
         self._get_status_map()
         self._get_resolution_map()
 
-        # projects-keys are the keywords of the projects in a JIRA install, e.g.
-        # FL, KDE, XFCE.
+        # projects-keys are the keywords of the projects in a JIRA install,
+        # e.g. FL, KDE, XFCE.
         self.projects_keys = self._get_projects_keys()
 
-    def _login(self, username, password):
-        self._auth = self._client.service.login(username, password)
+    def _login(self):
+        self._auth = self._client.service.login(self._username, self._password)
 
     def _get_status_map(self):
         statuses = self._client.service.getStatuses()
