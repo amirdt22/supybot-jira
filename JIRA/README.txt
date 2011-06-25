@@ -4,9 +4,43 @@ For now the only function is to get the summary of an issue. It can accept a
 "bug <issue-ids>" command, and can also recognize when people mention an issue
 in their messages.
 
-Necessary configuration:
+Dependencies
+------------
+The plugin depends on the suds library since it uses the SOAP service to
+interact with JIRA. I'm using supybot-0.83.4.1 and suds-0.4.
+
+Configuration
+-------------
 
     config supybot.plugins.JIRA.soap_url <URL to the JIRA SOAP service, e.g. http://issues.foresightlinux.org/jira/rpc/soap/jirasoapservice-v2?wsdl>
     config supybot.plugins.JIRA.username <username-to-log-into-JIRA>
     config supybot.plugins.JIRA.password <password-to-log-into-JIRA>
     reload JIRA
+
+A bug
+-----
+
+Supybot needs one patch to work well with suds.
+
+    --- src/log.py        2011-06-25 00:48:08.903280326 -0400
+    +++ src/log.py        2011-06-25 00:26:11.454604769 -0400
+    @@ -85,7 +85,7 @@
+             # self.error('Exception string: %s', eStrId)
+
+         def _log(self, level, msg, args, exc_info=None):
+    -        msg = format(msg, *args)
+    +        msg = format(str(msg), *args)
+             logging.Logger._log(self, level, msg, (), exc_info=exc_info)
+
+supybot has its own logging processing. But it can't handle when a non-string
+is passed to the log functions.
+
+      File "build/bdist.linux-x86_64/egg/suds/client.py", line 648, in send
+        log.error(self.last_sent())
+      File "/usr/lib64/python2.6/logging/__init__.py", line 1082, in error
+        self._log(ERROR, msg, args, **kwargs)
+      File "/home/jesse/.root/lib/python2.6/site-packages/supybot/log.py", line 88, in _log
+        msg = format(msg, *args)
+      File "/home/jesse/.root/lib/python2.6/site-packages/supybot/utils/str.py", line 437, in format
+        return _formatRe.sub(sub, s)
+    TypeError: expected string or buffer

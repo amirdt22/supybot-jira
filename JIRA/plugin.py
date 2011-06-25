@@ -67,7 +67,7 @@ class JIRA(MyPluginRegexp):
         msg = None
         try:
             msg = self.jira_client.query_issue(issue_id)
-        except Exception as excp:
+        except suds.WebFault:
             pass
 
         return msg
