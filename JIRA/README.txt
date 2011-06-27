@@ -12,7 +12,7 @@ interact with JIRA. I'm using supybot-0.83.4.1 and suds-0.4.
 Configuration
 -------------
 
-    config supybot.plugins.JIRA.soap_url <URL to the JIRA SOAP service, e.g. http://issues.foresightlinux.org/jira/rpc/soap/jirasoapservice-v2?wsdl>
+    config supybot.plugins.JIRA.jira_install <URL to the JIRA install, e.g. http://issues.foresightlinux.org/jira>
     config supybot.plugins.JIRA.username <username-to-log-into-JIRA>
     config supybot.plugins.JIRA.password <password-to-log-into-JIRA>
     reload JIRA

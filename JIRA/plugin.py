@@ -44,13 +44,18 @@ class JIRA(MyPluginRegexp):
     def __init__(self, irc):
         super(JIRA, self).__init__(irc)
 
-        soap_url = self.registryValue("soap_url")
+        self.ready_for_query = False
+        self.jira = None
+
+        jira_install = self.registryValue("jira_install")
         username = self.registryValue("username")
         password = self.registryValue("password")
-        if not (soap_url and username and password):
+        if not (jira_install and username and password):
             return
 
+        soap_url = jira_install + "/rpc/soap/jirasoapservice-v2?wsdl"
         self.jira = jira.JiraClient(soap_url, username, password)
+        self.ready_for_query = True
 
         pattern = r"(?:%s)-\d+" % "|".join(self.jira.get_projects_keys())
         # It's strange that if we use when="always", and if the msg is
@@ -88,9 +93,11 @@ class JIRA(MyPluginRegexp):
             msg += " %s: %s." % (field.capitalize(), getattr(issue, field))
 
         # Append the URL
-        url = self.registryValue("show_url")
-        if url:
-            msg += " %s%s" % (url, issue_id)
+        if self.registryValue("show_link"):
+            base = self.registryValue("jira_install")
+            if base.endswith("/"):
+                base = base[:-1]
+            msg += " %s/browse/%s" % (base, issue_id)
 
         msg = msg.encode("utf-8")
         return msg
@@ -101,6 +108,9 @@ class JIRA(MyPluginRegexp):
         Report the summary of the specified issues.
         """
 
+        if not self.ready_for_query:
+            irc.reply("No JIRA configuration.")
+
         channel = msg.args[0]
         for issue_id in text.split():
             msg = self.query_issue(issue_id.upper(), channel)
@@ -110,6 +120,8 @@ class JIRA(MyPluginRegexp):
     bug = wrap(bug, ["text"])
 
     def snarf_issue(self, irc, msg, match):
+        if not self.ready_for_query:
+            return
         channel = msg.args[0]
         issue_id = match.group(0).upper()
         msg = self.query_issue(issue_id, channel)

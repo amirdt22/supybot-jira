@@ -24,9 +24,9 @@ class AcceptedFieldsOfIssue(registry.SpaceSeparatedListOfStrings):
     Value = FieldOfIssue
 
 JIRA = conf.registerPlugin("JIRA")
-conf.registerGlobalValue(JIRA, "soap_url",
-        registry.String("", "SOAP URL of the JIRA install, e.g. " \
-                "http://issues.foresightlinux.org/jira/rpc/soap/jirasoapservice-v2?wsdl"))
+conf.registerGlobalValue(JIRA, "jira_install",
+        registry.String("", "URL of the JIRA install, e.g. " \
+                "http://issues.foresightlinux.org/jira"))
 conf.registerGlobalValue(JIRA, "username",
         registry.String("", "Username to login the JIRA install", private=True))
 conf.registerGlobalValue(JIRA, "password",
@@ -35,7 +35,6 @@ conf.registerChannelValue(JIRA, "issue_format",
         AcceptedFieldsOfIssue(default_fields,
             "The fields to list when describing an issue. " \
             "Possible values include: %s." % " ".join(default_fields)))
-conf.registerChannelValue(JIRA, "show_url",
-        registry.String("", "The URL to prepend to an issue number and format " \
-                "a link to the issue, e.g. http://issues.foresightlinux.org/jira/browse/. " \
-                "Disabled if empty."))
+conf.registerChannelValue(JIRA, "show_link",
+        registry.Boolean(True, "If true the bot will show the URL of the issue" \
+                "at the end of the summary."))
