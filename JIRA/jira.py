@@ -7,16 +7,14 @@ class JiraClient:
         self._auth = None
         self._status_map = None
         self._resolution_map = None
+        self._projects_keys = None
 
         self._username = username
         self._password = password
+
         self._login()
         self._get_status_map()
         self._get_resolution_map()
-
-        # projects-keys are the keywords of the projects in a JIRA install,
-        # e.g. FL, KDE, XFCE.
-        self.projects_keys = self._get_projects_keys()
 
     def _login(self):
         self._auth = self._client.service.login(self._username, self._password)
@@ -29,28 +27,30 @@ class JiraClient:
         resolutions = self._client.service.getResolutions()
         self._resolution_map = dict([(s.id, s.name) for s in resolutions])
 
-    def _get_projects_keys(self):
-        projects = self._client.service.getProjectsNoSchemes(self._auth)
-        ret = [p.key for p in projects]
+    def get_projects_keys(self):
+        # projects-keys are the keywords of the projects in a JIRA install,
+        # e.g. FL, KDE, XFCE.
+        if not self._projects_keys:
+            projects = self._client.service.getProjectsNoSchemes(self._auth)
+            self._projects_keys = [p.key for p in projects]
 
-        return ret
+        return self._projects_keys
 
-    def _get_user_fullname(self, username):
+    def get_user_fullname(self, username):
         user = self._client.service.getUser(self._auth, username)
         ret = user.fullname
         return ret
 
-    def _format_issue_resolution(self, resolution):
+    def get_status_string(self, status):
+        return self._status_map[status]
+
+    def get_resolution_string(self, resolution):
         # Resolution can be None
-        if resolution is None:
+        if not resolution:
             ret = "None"
         else:
             ret = self._resolution_map[resolution]
         return ret
-
-    def _format_time(self, time):
-        # 'Sun 2011-05-29 14:33'
-        return time.strftime("%a %Y-%m-%d %H:%M")
 
     def query_issue(self, number):
 
@@ -69,13 +69,4 @@ class JiraClient:
             else:
                 raise
 
-        ret = "%s: %s. Status: %s; resolution: %s. Created: %s; updated: %s. Reporter: %s; assignee: %s." % (
-                number, issue.summary,
-                self._status_map[issue.status],
-                self._format_issue_resolution(issue.resolution),
-                self._format_time(issue.created),
-                self._format_time(issue.updated),
-                self._get_user_fullname(issue.reporter),
-                self._get_user_fullname(issue.assignee))
-        ret = ret.encode("utf-8")
-        return ret
+        return issue

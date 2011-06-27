@@ -7,10 +7,7 @@ import re
 
 import suds
 
-import supybot.utils as utils
-from supybot.commands import *
-import supybot.plugins as plugins
-import supybot.ircutils as ircutils
+from supybot.commands import wrap
 import supybot.callbacks as callbacks
 
 import jira
@@ -53,9 +50,9 @@ class JIRA(MyPluginRegexp):
         if not (soap_url and username and password):
             return
 
-        self.jira_client = jira.JiraClient(soap_url, username, password)
+        self.jira = jira.JiraClient(soap_url, username, password)
 
-        pattern = r"(?:%s)-\d+" % "|".join(self.jira_client.projects_keys)
+        pattern = r"(?:%s)-\d+" % "|".join(self.jira.get_projects_keys())
         # It's strange that if we use when="always", and if the msg is
         # addressed, the user will get two replies. The bot would first give a
         # 'invalid command', then call the snarf method. So we don't use
@@ -63,13 +60,39 @@ class JIRA(MyPluginRegexp):
         self.add_regexp(pattern, 'snarf_issue', when="addressed")
         self.add_regexp(pattern, 'snarf_issue', when="unaddressed")
 
-    def query_issue(self, issue_id):
-        msg = None
+    def format_issue_time(self, time):
+        # E.g. 'Sun 2011-05-29 14:33'
+        return time.strftime("%a %Y-%m-%d %H:%M")
+
+    def query_issue(self, issue_id, channel):
+        issue = None
         try:
-            msg = self.jira_client.query_issue(issue_id)
+            issue = self.jira.query_issue(issue_id)
         except suds.WebFault:
             pass
 
+        if not issue:
+            return None
+
+        # Transform the fields into displayable strings
+        issue.status = self.jira.get_status_string(issue.status)
+        issue.resolution = self.jira.get_resolution_string(issue.resolution)
+        issue.created = self.format_issue_time(issue.created)
+        issue.updated = self.format_issue_time(issue.updated)
+        issue.reporter = self.jira.get_user_fullname(issue.reporter)
+        issue.assignee = self.jira.get_user_fullname(issue.assignee)
+
+        msg = "%s: %s." % (issue_id, issue.summary)
+        # Append requested fields to the message
+        for field in self.registryValue("issue_format", channel):
+            msg += " %s: %s." % (field.capitalize(), getattr(issue, field))
+
+        # Append the URL
+        url = self.registryValue("show_url")
+        if url:
+            msg += " %s%s" % (url, issue_id)
+
+        msg = msg.encode("utf-8")
         return msg
 
     def bug(self, irc, msg, args, text):
@@ -78,16 +101,18 @@ class JIRA(MyPluginRegexp):
         Report the summary of the specified issues.
         """
 
+        channel = msg.args[0]
         for issue_id in text.split():
-            msg = self.query_issue(issue_id.upper())
+            msg = self.query_issue(issue_id.upper(), channel)
             if msg:
                 irc.reply(msg)
 
     bug = wrap(bug, ["text"])
 
     def snarf_issue(self, irc, msg, match):
+        channel = msg.args[0]
         issue_id = match.group(0).upper()
-        msg = self.query_issue(issue_id)
+        msg = self.query_issue(issue_id, channel)
         if msg:
             irc.reply(msg, prefixNick=False)
 
