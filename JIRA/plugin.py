@@ -7,8 +7,9 @@ import re
 
 import suds
 
+from supybot import callbacks
+from supybot import ircutils
 from supybot.commands import wrap
-import supybot.callbacks as callbacks
 
 import jira
 
@@ -87,10 +88,11 @@ class JIRA(MyPluginRegexp):
         issue.reporter = self.jira.get_user_fullname(issue.reporter)
         issue.assignee = self.jira.get_user_fullname(issue.assignee)
 
-        msg = "%s: %s." % (issue_id, issue.summary)
+        msg = "%s: %s." % (ircutils.bold(issue_id), issue.summary)
         # Append requested fields to the message
         for field in self.registryValue("issue_format", channel):
-            msg += " %s: %s." % (field.capitalize(), getattr(issue, field))
+            msg += " %s: %s." % (ircutils.bold(field.capitalize()),
+                    getattr(issue, field))
 
         # Append the URL
         if self.registryValue("show_link"):
