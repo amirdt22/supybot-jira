@@ -10,6 +10,7 @@ import suds
 from supybot import callbacks
 from supybot import ircutils
 from supybot.commands import wrap
+from supybot.utils.structures import TimeoutQueue
 
 import jira
 
@@ -66,6 +67,10 @@ class JIRA(MyPluginRegexp):
         self.add_regexp(pattern, 'snarf_issue', when="addressed")
         self.add_regexp(pattern, 'snarf_issue', when="unaddressed")
 
+        # A timeout list, so that if an issue is mentioned several times in a
+        # row, the bot won't flood the channel.
+        self.snarfer_timeout_list = ircutils.IrcDict()
+
     def format_issue_time(self, time):
         # E.g. 'Sun 2011-05-29 14:33'
         return time.strftime("%a %Y-%m-%d %H:%M")
@@ -121,11 +126,32 @@ class JIRA(MyPluginRegexp):
 
     bug = wrap(bug, ["text"])
 
+    def issue_blocked(self, issue_id, channel):
+        # Add channel to the timeout list.
+        if channel not in self.snarfer_timeout_list:
+            timeout = self.registryValue("snarfer_timeout", channel)
+            self.snarfer_timeout_list[channel] = TimeoutQueue(timeout)
+
+        if issue_id in self.snarfer_timeout_list[channel]:
+            # The timeout hasn't expired yet.
+            ret = True
+        else:
+            # The timeout expired. Add the issue to the queue again.
+            self.snarfer_timeout_list[channel].enqueue(issue_id)
+            ret = False
+
+        return ret
+
     def snarf_issue(self, irc, msg, match):
         if not self.ready_for_query:
             return
+
         channel = msg.args[0]
         issue_id = match.group(0).upper()
+
+        if self.issue_blocked(issue_id, channel):
+            return
+
         msg = self.query_issue(issue_id, channel)
         if msg:
             irc.reply(msg, prefixNick=False)
