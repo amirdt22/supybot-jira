@@ -95,7 +95,7 @@ class JIRA(MyPluginRegexp):
                     getattr(issue, field))
 
         # Append the URL
-        if self.registryValue("show_link"):
+        if self.registryValue("show_link", channel):
             base = self.registryValue("jira_install")
             if base.endswith("/"):
                 base = base[:-1]
