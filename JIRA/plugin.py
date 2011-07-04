@@ -127,8 +127,9 @@ class JIRA(MyPluginRegexp):
         channel = msg.args[0]
         for issue_id in text.split():
             reply = self.query_issue(issue_id.upper(), channel)
-            if reply:
-                irc.reply(reply)
+            if not reply:
+                reply = "%s doesn't seem to exist." % issue_id
+            irc.reply(reply)
 
     bug = wrap(bug, ["text"])
 
@@ -149,16 +150,24 @@ class JIRA(MyPluginRegexp):
         return ret
 
     def snarf_issue(self, irc, msg, match):
-        if not self.jira:
-            return
+        assert self.jira is not None
 
         channel = msg.args[0]
         issue_id = match.group(0).upper()
 
+        reply = None
         if self.issue_blocked(issue_id, channel):
-            return
+            if msg.addressed:
+                reply = "%s was already queried within the last %s seconds." % (
+                        issue_id,
+                        self.registryValue("snarfer_timeout", channel))
+        else:
+            summary = self.query_issue(issue_id, channel)
+            if summary:
+                reply = summary
+            elif msg.addressed:
+                reply = "%s doesn't seem to exist." % issue_id
 
-        reply = self.query_issue(issue_id, channel)
         if reply:
             irc.reply(reply, prefixNick=False)
 
