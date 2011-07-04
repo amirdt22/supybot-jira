@@ -35,11 +35,12 @@ conf.registerGlobalValue(JIRA, "password",
 
 conf.registerChannelValue(JIRA, "issue_format",
         AcceptedFieldsOfIssue(default_fields,
-            "The fields to list when describing an issue. " \
-            "Possible values include: %s." % " ".join(default_fields)))
+        """The fields to list when describing an issue. Possible values
+        include: %s.""" % " ".join(default_fields)))
 conf.registerChannelValue(JIRA, "show_link",
-        registry.Boolean(True, "If true the bot will show the URL of the issue" \
-                "at the end of the summary."))
+        registry.Boolean(True,
+        """If true the bot will show the URL of the issue at the end of the
+        summary."""))
 
 conf.registerChannelValue(JIRA, 'snarfer_timeout',
     registry.PositiveInteger(300,

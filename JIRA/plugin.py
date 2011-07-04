@@ -46,9 +46,16 @@ class JIRA(MyPluginRegexp):
     def __init__(self, irc):
         super(JIRA, self).__init__(irc)
 
-        self.ready_for_query = False
         self.jira = None
+        self.connect_jira()
 
+        self.add_snarfer()
+
+        # A timeout list, so that if an issue is mentioned several times in a
+        # row, the bot won't flood the channel.
+        self.snarfer_timeout_list = ircutils.IrcDict()
+
+    def connect_jira(self):
         jira_install = self.registryValue("jira_install")
         username = self.registryValue("username")
         password = self.registryValue("password")
@@ -57,7 +64,10 @@ class JIRA(MyPluginRegexp):
 
         soap_url = jira_install + "/rpc/soap/jirasoapservice-v2?wsdl"
         self.jira = jira.JiraClient(soap_url, username, password)
-        self.ready_for_query = True
+
+    def add_snarfer(self):
+        if not self.jira:
+            return
 
         pattern = r"(?:%s)-\d+" % "|".join(self.jira.get_projects_keys())
         # It's strange that if we use when="always", and if the msg is
@@ -66,10 +76,6 @@ class JIRA(MyPluginRegexp):
         # 'always'.
         self.add_regexp(pattern, 'snarf_issue', when="addressed")
         self.add_regexp(pattern, 'snarf_issue', when="unaddressed")
-
-        # A timeout list, so that if an issue is mentioned several times in a
-        # row, the bot won't flood the channel.
-        self.snarfer_timeout_list = ircutils.IrcDict()
 
     def format_issue_time(self, time):
         # E.g. 'Sun 2011-05-29 14:33'
@@ -115,7 +121,7 @@ class JIRA(MyPluginRegexp):
         Report the summary of the specified issues.
         """
 
-        if not self.ready_for_query:
+        if not self.jira:
             irc.reply("No JIRA configuration.")
 
         channel = msg.args[0]
@@ -143,7 +149,7 @@ class JIRA(MyPluginRegexp):
         return ret
 
     def snarf_issue(self, irc, msg, match):
-        if not self.ready_for_query:
+        if not self.jira:
             return
 
         channel = msg.args[0]
