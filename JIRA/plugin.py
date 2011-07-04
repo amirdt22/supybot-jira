@@ -126,9 +126,9 @@ class JIRA(MyPluginRegexp):
 
         channel = msg.args[0]
         for issue_id in text.split():
-            msg = self.query_issue(issue_id.upper(), channel)
-            if msg:
-                irc.reply(msg)
+            reply = self.query_issue(issue_id.upper(), channel)
+            if reply:
+                irc.reply(reply)
 
     bug = wrap(bug, ["text"])
 
@@ -158,8 +158,8 @@ class JIRA(MyPluginRegexp):
         if self.issue_blocked(issue_id, channel):
             return
 
-        msg = self.query_issue(issue_id, channel)
-        if msg:
-            irc.reply(msg, prefixNick=False)
+        reply = self.query_issue(issue_id, channel)
+        if reply:
+            irc.reply(reply, prefixNick=False)
 
 Class = JIRA
