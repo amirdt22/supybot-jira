@@ -69,7 +69,8 @@ class JIRA(MyPluginRegexp):
         if not self.jira:
             return
 
-        pattern = r"(?:%s)-\d+" % "|".join(self.jira.get_projects_keys())
+        # A project key followed by some numbers, e.g. FL-1234.
+        pattern = r"\b(?:%s)-\d+\b" % "|".join(self.jira.get_projects_keys())
         # It's strange that if we use when="always", and if the msg is
         # addressed, the user will get two replies. The bot would first give a
         # 'invalid command', then call the snarf method. So we don't use
