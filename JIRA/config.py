@@ -25,13 +25,9 @@ class AcceptedFieldsOfIssue(registry.SpaceSeparatedListOfStrings):
 
 JIRA = conf.registerPlugin("JIRA")
 
-conf.registerGlobalValue(JIRA, "jira_install",
-        registry.String("", "URL of the JIRA install, e.g. " \
-                "http://issues.foresightlinux.org/jira"))
-conf.registerGlobalValue(JIRA, "username",
-        registry.String("", "Username to login the JIRA install", private=True))
-conf.registerGlobalValue(JIRA, "password",
-        registry.String("", "Password to login the JIRA install", private=True))
+conf.registerGlobalValue(JIRA, "installs",
+    registry.SpaceSeparatedListOfStrings([], """A list of JIRA installs that
+    have been added with the 'add' command."""))
 
 conf.registerChannelValue(JIRA, "issue_format",
         AcceptedFieldsOfIssue(default_fields,

@@ -9,13 +9,14 @@ Dependencies
 The plugin depends on the suds library since it uses the SOAP service to
 interact with JIRA. I'm using supybot-0.83.4.1 and suds-0.4.
 
-Configuration
+Quick Start
 -------------
 
-    config supybot.plugins.JIRA.jira_install <URL to the JIRA install, e.g. http://issues.foresightlinux.org/jira>
-    config supybot.plugins.JIRA.username <username-to-log-into-JIRA>
-    config supybot.plugins.JIRA.password <password-to-log-into-JIRA>
-    reload JIRA
+    load JIRA
+    jira add <name> <URL> <username> <password>
+    # e.g. jira add fits http://issues.foresightlinux.org/jira <user> <pass>
+    jira add <name1> <URL1> <username1> <password1>
+    # more...
 
 A bug
 -----

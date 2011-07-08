@@ -18,8 +18,10 @@ __url__ = 'githut.com'
 import config
 import plugin
 import jira
+import snarfer_plugin
 reload(plugin) # In case we're being reloaded.
 reload(jira)
+reload(snarfer_plugin)
 
 if world.testing:
     import test

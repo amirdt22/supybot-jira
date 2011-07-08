@@ -3,41 +3,18 @@
 # All rights reserved.
 ###
 
-import re
-
 import suds
 
-from supybot import callbacks
+from supybot import conf
 from supybot import ircutils
+from supybot import registry
 from supybot.commands import wrap
 from supybot.utils.structures import TimeoutQueue
 
+from snarfer_plugin import PluginSnarfer
 import jira
 
-class MyPluginRegexp(callbacks.PluginRegexp):
-    # The original PluginRegexp lacks a way to add regexps programmatically.
-    def add_regexp(self, pattern, method_name, when="always"):
-        """Register a regexp pattern
-
-        'when' can be always, addressed, or unaddressed.
-          'always': method is called whether the message is addressed or not.
-          'addressed': method is called only when the message is addressed.
-          'unaddressed': method is called only when the message is not
-                         addressed.
-        """
-        assert(when in ["always", "addressed", "unaddressed"])
-
-        if when == "always":
-            r = re.compile(pattern, self.flags)
-            self.res.append((r, method_name))
-        elif when == "addressed":
-            r = re.compile(pattern, self.flags)
-            self.addressedRes.append((r, method_name))
-        elif when == "unaddressed":
-            r = re.compile(pattern, self.flags)
-            self.unaddressedRes.append((r, method_name))
-
-class JIRA(MyPluginRegexp):
+class JIRA(PluginSnarfer):
     """This plugin provides the ability to interact with Jira installs.
     """
 
@@ -46,46 +23,116 @@ class JIRA(MyPluginRegexp):
     def __init__(self, irc):
         super(JIRA, self).__init__(irc)
 
-        self.jira = None
-        self.connect_jira()
-
-        self.add_snarfer()
+        self.jiras = {}
+        for name in self.registryValue("installs"):
+            self.register_jira(name, base=conf.supybot.plugins.JIRA.installs)
+            self.connect_jira(name)
 
         # A timeout list, so that if an issue is mentioned several times in a
         # row, the bot won't flood the channel.
         self.snarfer_timeout_list = ircutils.IrcDict()
 
-    def connect_jira(self):
-        jira_install = self.registryValue("jira_install")
-        username = self.registryValue("username")
-        password = self.registryValue("password")
-        if not (jira_install and username and password):
-            return
+    def register_jira(self, handle, base):
+        group = conf.registerGroup(base, handle)
+        conf.registerGlobalValue(group, "url",
+                registry.String("", "URL of the JIRA install, e.g. " \
+                        "http://issues.foresightlinux.org/jira"))
+        conf.registerGlobalValue(group, "username",
+                registry.String("", "Username to login the JIRA install",
+                    private=True))
+        conf.registerGlobalValue(group, "password",
+                registry.String("", "Password to login the JIRA install",
+                    private=True))
 
-        soap_url = jira_install + "/rpc/soap/jirasoapservice-v2?wsdl"
-        self.jira = jira.JiraClient(soap_url, username, password)
+    def configure_jira(self, name, url, username, password):
+        install = "installs.%s" % name
+        self.setRegistryValue('%s.url' % install, url)
+        self.setRegistryValue('%s.username' % install, username)
+        self.setRegistryValue('%s.password' % install, password)
 
-    def add_snarfer(self):
-        if not self.jira:
-            return
-
+    def register_regexp(self, jira_name):
+        keys = self.jiras[jira_name].get_projects_keys()
         # A project key followed by some numbers, e.g. FL-1234.
-        pattern = r"\b(?:%s)-\d+\b" % "|".join(self.jira.get_projects_keys())
+        pattern = r"\b(?:%s)-\d+\b" % "|".join(keys)
         # It's strange that if we use when="always", and if the msg is
         # addressed, the user will get two replies. The bot would first give a
         # 'invalid command', then call the snarf method. So we don't use
         # 'always'.
-        self.add_regexp(pattern, 'snarf_issue', when="addressed")
-        self.add_regexp(pattern, 'snarf_issue', when="unaddressed")
+        self.add_snarfer(pattern, when="addressed", method='snarf_issue',
+                jira_name=jira_name)
+        self.add_snarfer(pattern, when="unaddressed", method='snarf_issue',
+                jira_name=jira_name)
+
+    def connect_jira(self, name):
+        install = "installs.%s." % name
+
+        url = self.registryValue(install + "url")
+        username = self.registryValue(install + "username")
+        password = self.registryValue(install + "password")
+        if not (url and username and password):
+            return
+
+        soap_url = url + "/rpc/soap/jirasoapservice-v2?wsdl"
+        self.jiras[name] = jira.JiraClient(soap_url, username, password)
+
+        self.register_regexp(name)
+
+    def add(self, irc, msg, args, name, url, username, password):
+        """add <name> <url> <username> <password>
+
+        Let the bot know about a new JIRA install. Name is how the install will
+        be referred to. URL is where it's located, e.g.
+        http://issues.foresightlinux.org/jira. Username and password are used
+        to login to JIRA.
+        """
+        name = name.lower()
+        self.register_jira(name, base=conf.supybot.plugins.JIRA.installs)
+
+        installs = self.registryValue("installs")
+        installs.append(name)
+        self.setRegistryValue('installs', installs)
+
+        self.configure_jira(name, url, username, password)
+        self.connect_jira(name)
+        irc.replySuccess()
+
+    add = wrap(add, ["admin", "private", "somethingWithoutSpaces", "url",
+        "somethingWithoutSpaces", "somethingWithoutSpaces"])
+
+    def list(self, irc, msg, args):
+        """list
+
+        List the JIRA installs the bot knows about.
+        """
+        if not self.jiras:
+            irc.reply("I don't know about any JIRA install.")
+
+        for j in self.jiras:
+            reply = "%s: URL = %s; matches %s." % (
+                    ircutils.bold(j),
+                    self.registryValue("installs.%s.url" % j),
+                    self.jiras[j].get_projects_keys())
+            irc.reply(reply)
+
+    list = wrap(list)
 
     def format_issue_time(self, time):
         # E.g. 'Sun 2011-05-29 14:33'
         return time.strftime("%a %Y-%m-%d %H:%M")
 
-    def query_issue(self, issue_id, channel):
+    def query_issue(self, jira_name, issue_id, channel):
+
+        def format_url():
+            base = self.registryValue("installs.%s.url" % jira_name)
+            if base.endswith("/"):
+                base = base[:-1]
+            return "%s/browse/%s" % (base, issue_id)
+
+        jiraclient = self.jiras[jira_name]
+
         issue = None
         try:
-            issue = self.jira.query_issue(issue_id)
+            issue = jiraclient.query_issue(issue_id)
         except suds.WebFault:
             pass
 
@@ -93,12 +140,12 @@ class JIRA(MyPluginRegexp):
             return None
 
         # Transform the fields into displayable strings
-        issue.status = self.jira.get_status_string(issue.status)
-        issue.resolution = self.jira.get_resolution_string(issue.resolution)
+        issue.status = jiraclient.get_status_string(issue.status)
+        issue.resolution = jiraclient.get_resolution_string(issue.resolution)
         issue.created = self.format_issue_time(issue.created)
         issue.updated = self.format_issue_time(issue.updated)
-        issue.reporter = self.jira.get_user_fullname(issue.reporter)
-        issue.assignee = self.jira.get_user_fullname(issue.assignee)
+        issue.reporter = jiraclient.get_user_fullname(issue.reporter)
+        issue.assignee = jiraclient.get_user_fullname(issue.assignee)
 
         msg = "%s: %s." % (ircutils.bold(issue_id), issue.summary)
         # Append requested fields to the message
@@ -108,31 +155,28 @@ class JIRA(MyPluginRegexp):
 
         # Append the URL
         if self.registryValue("show_link", channel):
-            base = self.registryValue("jira_install")
-            if base.endswith("/"):
-                base = base[:-1]
-            msg += " %s/browse/%s" % (base, issue_id)
+            msg += " " + format_url()
 
         msg = msg.encode("utf-8")
         return msg
 
-    def bug(self, irc, msg, args, text):
-        """issue-id [<issue-id> ...]
+    def bug(self, irc, msg, args, jira_name, text):
+        """<jira-name> <issue-id> [<issue-id> ...]
 
         Report the summary of the specified issues.
         """
 
-        if not self.jira:
-            irc.reply("No JIRA configuration.")
+        if not jira_name in self.jiras:
+            irc.reply("I know nothing about %s." % jira_name)
 
         channel = msg.args[0]
         for issue_id in text.split():
-            reply = self.query_issue(issue_id.upper(), channel)
+            reply = self.query_issue(jira_name, issue_id.upper(), channel)
             if not reply:
                 reply = "%s doesn't seem to exist." % issue_id
             irc.reply(reply)
 
-    bug = wrap(bug, ["text"])
+    bug = wrap(bug, ["somethingWithoutSpaces", "text"])
 
     def issue_blocked(self, issue_id, channel):
         # Add channel to the timeout list.
@@ -150,9 +194,7 @@ class JIRA(MyPluginRegexp):
 
         return ret
 
-    def snarf_issue(self, irc, msg, match):
-        assert self.jira is not None
-
+    def snarf_issue(self, irc, msg, match, jira_name):
         channel = msg.args[0]
         issue_id = match.group(0).upper()
 
@@ -163,7 +205,7 @@ class JIRA(MyPluginRegexp):
                         issue_id,
                         self.registryValue("snarfer_timeout", channel))
         else:
-            summary = self.query_issue(issue_id, channel)
+            summary = self.query_issue(jira_name, issue_id, channel)
             if summary:
                 reply = summary
             elif msg.addressed:
