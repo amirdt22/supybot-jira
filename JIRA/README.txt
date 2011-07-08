@@ -1,8 +1,10 @@
 A plugin for supybot to interact with JIRA installations
 
 For now the only function is to get the summary of an issue. It can accept a
-"bug <issue-ids>" command, and can also recognize when people mention an issue
-in their messages.
+"bug <jira-name> <issue-ids>" command, and can also recognize when people
+mention an issue in their messages.
+
+It supports multiple JIRA installs, and the displaying format is configurable.
 
 Dependencies
 ------------
