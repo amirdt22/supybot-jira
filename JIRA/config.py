@@ -1,8 +1,3 @@
-###
-# Copyright (c) 2011, Jesse Zhang
-# All rights reserved.
-###
-
 import supybot.conf as conf
 import supybot.registry as registry
 

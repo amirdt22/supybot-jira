@@ -1,8 +1,3 @@
-###
-# Copyright (c) 2011, Jesse Zhang
-# All rights reserved.
-###
-
 import suds
 
 from supybot import conf
@@ -163,7 +158,7 @@ class JIRA(PluginSnarfer):
     def bug(self, irc, msg, args, jira_name, text):
         """<jira-name> <issue-id> [<issue-id> ...]
 
-        Report the summary of the specified issues.
+        Get the summary of the specified issues.
         """
 
         if not jira_name in self.jiras:

@@ -1,8 +1,3 @@
-###
-# Copyright (c) 2011, Jesse Zhang
-# All rights reserved.
-###
-
 """
 Interact with JIRA installations
 """
