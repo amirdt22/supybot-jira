@@ -14,9 +14,11 @@ import config
 import plugin
 import jira
 import snarfer_plugin
+import relative_time
 reload(plugin) # In case we're being reloaded.
 reload(jira)
 reload(snarfer_plugin)
+reload(relative_time)
 
 if world.testing:
     import test

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-def get_age(date, now=datetime.now()):
+def get_age(date):
     '''Take a datetime and return its "age" as a string.
 
     The age can be in second, minute, hour, day, month or year. Only the
@@ -25,6 +25,7 @@ def get_age(date, now=datetime.now()):
 
     class PrettyDelta:
         def __init__(self, dt):
+            now=datetime.now()
             delta = now - dt
             self.day = delta.days
             self.second = delta.seconds
