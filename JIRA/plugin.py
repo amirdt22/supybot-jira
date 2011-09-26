@@ -7,6 +7,7 @@ from supybot.commands import wrap
 from supybot.utils.structures import TimeoutQueue
 
 from snarfer_plugin import PluginSnarfer
+from relative_time import get_age
 import jira
 
 class JIRA(PluginSnarfer):
@@ -111,9 +112,8 @@ class JIRA(PluginSnarfer):
 
     list = wrap(list)
 
-    def format_issue_time(self, time):
-        # E.g. 'Sun 2011-05-29 14:33'
-        return time.strftime("%a %Y-%m-%d %H:%M")
+    def format_issue_time(self, date):
+        return get_age(date) + " ago"
 
     def query_issue(self, jira_name, issue_id, channel):
 

@@ -49,3 +49,11 @@ supybot has its own logging processing. But it can't handle when a non-string
       File "/home/jesse/.root/lib/python2.6/site-packages/supybot/utils/str.py", line 437, in format
         return _formatRe.sub(sub, s)
     TypeError: expected string or buffer
+
+Another bug
+-----------
+
+suds-0.4 needs this oneliner in order to return time correctly when in
+Daylight Saving Time.
+
+    https://bitbucket.org/mirror/suds/changeset/9e91e1cec4b1#chg-suds/sax/date.py
