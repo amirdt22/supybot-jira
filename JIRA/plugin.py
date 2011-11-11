@@ -21,15 +21,15 @@ class JIRA(PluginSnarfer):
 
         self.jiras = {}
         for name in self.registryValue("installs"):
-            self.register_jira(name, base=conf.supybot.plugins.JIRA.installs)
-            self.connect_jira(name)
+            self.register_jira_install(name)
+            self.connect_jira_install(name)
 
         # A timeout list, so that if an issue is mentioned several times in a
         # row, the bot won't flood the channel.
         self.snarfer_timeout_list = ircutils.IrcDict()
 
-    def register_jira(self, handle, base):
-        group = conf.registerGroup(base, handle)
+    def register_jira_install(self, handle):
+        group = conf.registerGroup(conf.supybot.plugins.JIRA.installs, handle)
         conf.registerGlobalValue(group, "url",
                 registry.String("", "URL of the JIRA install, e.g. " \
                         "http://issues.foresightlinux.org/jira"))
@@ -40,7 +40,7 @@ class JIRA(PluginSnarfer):
                 registry.String("", "Password to login the JIRA install",
                     private=True))
 
-    def configure_jira(self, name, url, username, password):
+    def write_config(self, name, url, username, password):
         install = "installs.%s" % name
         self.setRegistryValue('%s.url' % install, url)
         self.setRegistryValue('%s.username' % install, username)
@@ -59,7 +59,7 @@ class JIRA(PluginSnarfer):
         self.add_snarfer(pattern, when="unaddressed", method='snarf_issue',
                 jira_name=jira_name)
 
-    def connect_jira(self, name):
+    def connect_jira_install(self, name):
         install = "installs.%s." % name
 
         url = self.registryValue(install + "url")
@@ -82,14 +82,14 @@ class JIRA(PluginSnarfer):
         to login to JIRA.
         """
         name = name.lower()
-        self.register_jira(name, base=conf.supybot.plugins.JIRA.installs)
+        self.register_jira_install(name)
 
         installs = self.registryValue("installs")
         installs.append(name)
         self.setRegistryValue('installs', installs)
 
-        self.configure_jira(name, url, username, password)
-        self.connect_jira(name)
+        self.write_config(name, url, username, password)
+        self.connect_jira_install(name)
         irc.replySuccess()
 
     add = wrap(add, ["admin", "private", "somethingWithoutSpaces", "url",
