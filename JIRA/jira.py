@@ -12,6 +12,7 @@ class JiraClient:
         self._username = username
         self._password = password
 
+    def login(self):
         self._login()
         self._get_status_map()
         self._get_resolution_map()

@@ -69,7 +69,9 @@ class JIRA(PluginSnarfer):
             return
 
         soap_url = url + "/rpc/soap/jirasoapservice-v2?wsdl"
-        self.jiras[name] = jira.JiraClient(soap_url, username, password)
+        c = jira.JiraClient(soap_url, username, password)
+        c.login()
+        self.jiras[name] = c
 
         self.register_regexp(name)
 
