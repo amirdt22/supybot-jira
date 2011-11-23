@@ -1,3 +1,6 @@
+import time
+from datetime import datetime, timedelta
+
 import suds
 
 class JiraClient:
@@ -71,3 +74,20 @@ class JiraClient:
                 raise
 
         return issue
+
+    def _server_time_to_local(self, server_time):
+        # format of server_time ==> 2011-11-11T04:45:23.471-0500
+        # in ISO8601 format: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+        date = datetime.strptime(server_time[:-5], '%Y-%m-%dT%H:%M:%S.%f')
+        timezone = int(server_time[-5:]) / 100.0
+        local_tz = -time.timezone / 3600.0 + time.daylight
+        timezone_delta = timedelta(hours=local_tz - timezone)
+
+        return date + timezone_delta
+
+    def get_server_time(self):
+        '''Return current time on the server, converted to local timezone
+        '''
+        info = self._client.service.getServerInfo()
+        server_time = info.serverTime.serverTime
+        return self._server_time_to_local(server_time)

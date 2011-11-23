@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import suds
 
 from supybot import conf
@@ -20,13 +22,17 @@ class JIRA(PluginSnarfer):
         super(JIRA, self).__init__(irc)
 
         self.jiras = {}
-        for name in self.registryValue("installs"):
-            self.register_jira_install(name)
-            self.connect_jira_install(name)
+
+        # recording the descrepancy between server and local time
+        self._time_diff = {}
 
         # A timeout list, so that if an issue is mentioned several times in a
         # row, the bot won't flood the channel.
         self.snarfer_timeout_list = ircutils.IrcDict()
+
+        for name in self.registryValue("installs"):
+            self.register_jira_install(name)
+            self.connect_jira_install(name)
 
     def register_jira_install(self, handle):
         group = conf.registerGroup(conf.supybot.plugins.JIRA.installs, handle)
@@ -72,6 +78,7 @@ class JIRA(PluginSnarfer):
         c = jira.JiraClient(soap_url, username, password)
         c.login()
         self.jiras[name] = c
+        self._time_diff[name] = datetime.now() - c.get_server_time()
 
         self.register_regexp(name)
 
@@ -139,8 +146,10 @@ class JIRA(PluginSnarfer):
         # Transform the fields into displayable strings
         issue.status = jiraclient.get_status_string(issue.status)
         issue.resolution = jiraclient.get_resolution_string(issue.resolution)
-        issue.created = self.format_issue_time(issue.created)
-        issue.updated = self.format_issue_time(issue.updated)
+        issue.created = self.format_issue_time(issue.created + \
+                self._time_diff[jira_name])
+        issue.updated = self.format_issue_time(issue.updated + \
+                self._time_diff[jira_name])
         issue.reporter = jiraclient.get_user_fullname(issue.reporter)
         issue.assignee = jiraclient.get_user_fullname(issue.assignee)
 
