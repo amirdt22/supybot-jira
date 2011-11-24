@@ -33,7 +33,6 @@ Usage
       all JIRA installs known to the bot.
     * `username` and `password`: the bot needs to log into the JIRA.
 * The bot will automatically recognize issue numbers (Can't be turned off for now).
-* Also accepts a `bug` command: `bug <jira-name> <issue-ids>`
 
 Configuration
 -------------
@@ -42,7 +41,7 @@ Configuration
 * `plugins.jira.issue_format`: Possible (and default) values: status resolution
   created updated reporter assignee
 * `plugins.jira.snarfer_timeout`: Seconds to wait before automatically
-  responding to an issue again. (Doesn't apply to the `bug` command)
+  responding to an issue again. (Doesn't apply when the bot is explicitly addressed.)
 * `plugins.jira.installs`: list of all JIRA installs
 * information of a JIRA install: `plugins.jira.installs.name.url`,
   `plugins.jira.installs.name.username`, `plugins.jira.installs.name.password`.
@@ -85,3 +84,9 @@ suds-0.4 needs this oneliner in order to return time correctly when in
 Daylight Saving Time.
 
     https://bitbucket.org/mirror/suds/changeset/9e91e1cec4b1#chg-suds/sax/date.py
+
+TODO
+----
+
+* Don't respond if the user is another bot
+* Add option to disable snarfer

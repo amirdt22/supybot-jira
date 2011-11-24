@@ -166,24 +166,6 @@ class JIRA(PluginSnarfer):
         msg = msg.encode("utf-8")
         return msg
 
-    def bug(self, irc, msg, args, jira_name, text):
-        """<jira-name> <issue-id> [<issue-id> ...]
-
-        Get the summary of the specified issues.
-        """
-
-        if not jira_name in self.jiras:
-            irc.reply("I know nothing about %s." % jira_name)
-
-        channel = msg.args[0]
-        for issue_id in text.split():
-            reply = self.query_issue(jira_name, issue_id.upper(), channel)
-            if not reply:
-                reply = "%s doesn't seem to exist." % issue_id
-            irc.reply(reply)
-
-    bug = wrap(bug, ["somethingWithoutSpaces", "text"])
-
     def issue_blocked(self, issue_id, channel):
         # Add channel to the timeout list.
         if channel not in self.snarfer_timeout_list:
@@ -204,20 +186,13 @@ class JIRA(PluginSnarfer):
         channel = msg.args[0]
         issue_id = match.group(0).upper()
 
-        reply = None
-        if self.issue_blocked(issue_id, channel):
-            if msg.addressed:
-                reply = "%s was already queried within the last %s seconds." % (
-                        issue_id,
-                        self.registryValue("snarfer_timeout", channel))
-        else:
+        if msg.addressed or not self.issue_blocked(issue_id, channel):
             summary = self.query_issue(jira_name, issue_id, channel)
             if summary:
                 reply = summary
             elif msg.addressed:
                 reply = "%s doesn't seem to exist." % issue_id
 
-        if reply:
             irc.reply(reply, prefixNick=False)
 
 Class = JIRA
