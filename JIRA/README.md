@@ -1,12 +1,13 @@
-A plugin for supybot to interact with JIRA installations
+A supybot plugin to interact with the JIRA issue tracking system
 
 License: GPLv2
 
-For now the only function is to get the summary of an issue. It can detect
-when people mention an issue in their message, and also accepts a "bug
-<jira-name> <issue-ids>" command.
+Features
+--------
 
-It supports multiple JIRA installs, and the displaying format is configurable.
+* Detect when an issue is mentioned and print the summary of the issue
+* Support multiple JIRA installs
+* Format of issue summary is configurable
 
 Dependencies
 ------------
@@ -18,9 +19,36 @@ Quick Start
 
     load JIRA
     jira add <name> <URL> <username> <password>
-    # e.g. jira add fits http://issues.foresightlinux.org/jira <user> <pass>
     jira add <name1> <URL1> <username1> <password1>
-    # more...
+
+Example `jira add`:
+    # jira add fits http://issues.foresightlinux.org/jira <user> <pass>
+
+Usage
+-----------------------
+
+* Add a JIRA install: `jira add <name> <URL> <username> <password>`
+    * `name`: how the bot will address this install. Should be unique between
+      all JIRA installs known to the bot.
+    * `username` and `password`: the bot needs to log into the JIRA.
+* The bot will automatically recognize issue numbers (Can't be turned off for now).
+* Also accepts a `bug` command:
+    bug <jira-name> <issue-ids>
+
+Configuration
+-------------
+
+* `plugins.jira.show_link`: show issue URL at the end of the summary
+* `plugins.jira.issue_format`: Possible (and default) values: status resolution
+  created updated reporter assignee
+* `plugins.jira.snarfer_timeout`: Seconds to wait before automatically
+  responding to an issue again. (Doesn't apply to the `bug` command)
+* `plugins.jira.installs`: list of all JIRA installs
+* information of a JIRA install: `plugins.jira.installs.name.url`,
+  `plugins.jira.installs.name.username`, `plugins.jira.installs.name.password`.
+  (as specified in the `jira add` call)
+
+Use `config help` to read more about a configuration option.
 
 A bug
 -----
