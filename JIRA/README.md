@@ -22,7 +22,8 @@ Quick Start
     jira add <name1> <URL1> <username1> <password1>
 
 Example `jira add`:
-    # jira add fits http://issues.foresightlinux.org/jira <user> <pass>
+
+    jira add fits http://issues.foresightlinux.org/ <user> <pass>
 
 Usage
 -----------------------
@@ -32,8 +33,7 @@ Usage
       all JIRA installs known to the bot.
     * `username` and `password`: the bot needs to log into the JIRA.
 * The bot will automatically recognize issue numbers (Can't be turned off for now).
-* Also accepts a `bug` command:
-    bug <jira-name> <issue-ids>
+* Also accepts a `bug` command: `bug <jira-name> <issue-ids>`
 
 Configuration
 -------------
