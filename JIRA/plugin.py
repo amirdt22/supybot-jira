@@ -55,11 +55,10 @@ class JIRA(PluginSnarfer):
     def register_regexp(self, jira_name):
         keys = self.jiras[jira_name].get_projects_keys()
         # A project key followed by some numbers, e.g. FL-1234.
-        pattern = r"\b(?:%s)-\d+\b" % "|".join(keys)
-        # It's strange that if we use when="always", and if the msg is
-        # addressed, the user will get two replies. The bot would first give a
-        # 'invalid command', then call the snarf method. So we don't use
-        # 'always'.
+        pattern = r"(^|\s)(%s-\d+)($|\s)" % keys
+        # If when="always" is used, the bot will first give a "command not
+        # found" before calling the snarf method. Which we don't want. So use
+        # when="addressed" and when="unaddressed" instead.
         self.add_snarfer(pattern, when="addressed", method='snarf_issue',
                 jira_name=jira_name)
         self.add_snarfer(pattern, when="unaddressed", method='snarf_issue',
