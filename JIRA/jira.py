@@ -3,6 +3,16 @@ from datetime import datetime, timedelta
 
 import suds
 
+def re_make_pattern(projects):
+    keys = r"(%s)" % "|".join(projects)
+    # A project key followed by some numbers, e.g. FL-1234.
+    pattern = r"(^|\s)(%s-\d+)(?=$|\s)" % keys
+    return pattern
+
+def re_get_issue(match):
+    issue_id = match.group(2).upper()
+    return issue_id
+
 class JiraClient:
     def __init__(self, soap_url, username, password):
         self._client = suds.client.Client(soap_url)

@@ -53,9 +53,8 @@ class JIRA(PluginSnarfer):
         self.setRegistryValue('%s.password' % install, password)
 
     def register_regexp(self, jira_name):
-        keys = self.jiras[jira_name].get_projects_keys()
-        # A project key followed by some numbers, e.g. FL-1234.
-        pattern = r"(^|\s)(%s-\d+)($|\s)" % keys
+        projects = self.jiras[jira_name].get_projects_keys()
+        pattern = jira.re_make_pattern(projects)
         # If when="always" is used, the bot will first give a "command not
         # found" before calling the snarf method. Which we don't want. So use
         # when="addressed" and when="unaddressed" instead.
@@ -183,7 +182,7 @@ class JIRA(PluginSnarfer):
 
     def snarf_issue(self, irc, msg, match, jira_name):
         channel = msg.args[0]
-        issue_id = match.group(0).upper()
+        issue_id = jira.re_get_issue(match)
 
         if msg.addressed or not self.issue_blocked(issue_id, channel):
             summary = self.query_issue(jira_name, issue_id, channel)
