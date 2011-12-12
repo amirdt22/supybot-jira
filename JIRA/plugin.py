@@ -184,6 +184,7 @@ class JIRA(PluginSnarfer):
         channel = msg.args[0]
         issue_id = jira.re_get_issue(match)
 
+        reply = None
         if msg.addressed or not self.issue_blocked(issue_id, channel):
             summary = self.query_issue(jira_name, issue_id, channel)
             if summary:
@@ -191,6 +192,7 @@ class JIRA(PluginSnarfer):
             elif msg.addressed:
                 reply = "%s doesn't seem to exist." % issue_id
 
+        if reply:
             irc.reply(reply, prefixNick=False)
 
 Class = JIRA
